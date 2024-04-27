@@ -64,6 +64,7 @@ def combine_csv_files(directory_path):
     for file in csv_files:
         df = pd.read_csv(file)
         data_frames.append(df)
+        print(f'Finished reading: {file}')
 
     if data_frames:  # Check if there are any data frames to combine
         combined_df = pd.concat(data_frames, ignore_index=True)
@@ -80,7 +81,7 @@ def combine_csv_files(directory_path):
         return pd.DataFrame(columns=['Date', 'Value'])  # Return an empty DataFrame if no CSV was combined
 
 # Define the path to the directory containing the CSV files
-directory_path = 'C:\\Users\\Ilyas work\\PycharmProjects\\pythonProject'
+directory_path = 'C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python'
 
 # Combine CSV files and get the combined DataFrame
 df = combine_csv_files(directory_path)
