@@ -1,0 +1,60 @@
+openapi: 3.0.0
+info:
+    title: "Data Processing API"
+    version: "1.0.0"
+
+paths:
+    /predict:
+        post:
+            summary: "Predict a value based on a date"
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                date:
+                                    type: string
+                                    description: "Date in YYYY-MM-DD format"
+
+            responses:
+                200:
+                    description: "Predicted value"
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    predicted_value:
+                                        type: number
+                400:
+                    description: "Error"
+
+    /upload:
+        post:
+            summary: "Upload a CSV file"
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                    description: "CSV file to upload"
+
+            responses:
+                200:
+                    description: "Success message"
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status:
+                                        type: string
+                400:
+                    description: "Error"
