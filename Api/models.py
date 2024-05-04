@@ -1,12 +1,13 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker
 from app import app
 from datetime import datetime
 
 Base = declarative_base()
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
-Session = sessionmaker(bind=engine)
+# Create a scoped session to manage SQLAlchemy sessions properly across different threads
+Session = scoped_session(sessionmaker(bind=engine))
 
 class DataPoint(Base):
     __tablename__ = 'datapoints'
@@ -32,7 +33,8 @@ class TblWebAppRequestMaster(Base):
     UniqueId = Column(Integer, primary_key=True, autoincrement=True)
     TimeStamp = Column(DateTime, default=datetime.now)
     RecordCount = Column(Integer)
-    FileName = Column(String(255))
+    FileName = Column(String(255), nullable=True)
+    UserName = Column(String(255), nullable=True)
 
 
 Base.metadata.create_all(engine)
