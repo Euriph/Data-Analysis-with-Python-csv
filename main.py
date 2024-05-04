@@ -68,15 +68,15 @@ def combine_csv_files(directory_path):
 
     if data_frames:  # Check if there are any data frames to combine
         combined_df = pd.concat(data_frames, ignore_index=True)
-        combined_df.to_csv(os.path.join(directory_path, 'Combined_Data.csv'), index=False)
+        combined_df.to_csv(os.path.join(directory_path, 'Data Values/Combined_Data.csv'), index=False)
 
     # Rename the original files to mark as done
     for file in csv_files:
         os.rename(file, file.replace('.csv', '.done'))
 
     # Reload Combined_Data.csv to ensure it is up to date
-    if os.path.exists(os.path.join(directory_path, 'Combined_Data.csv')):
-        return pd.read_csv(os.path.join(directory_path, 'Combined_Data.csv'))
+    if os.path.exists(os.path.join(directory_path, 'Data Values/Combined_Data.csv')):
+        return pd.read_csv(os.path.join(directory_path, 'Data Values/Combined_Data.csv'))
     else:
         return pd.DataFrame(columns=['Date', 'Value'])  # Return an empty DataFrame if no CSV was combined
 
@@ -118,6 +118,6 @@ while True:
     print("Mean Squared Error:", mse)
 
 # Optionally save the updated DataFrame to CSV
-save_data(df, os.path.join(directory_path, 'Combined_Data.csv'))
+save_data(df, os.path.join(directory_path, 'Data Values/Combined_Data.csv'))
 
-print("Exited the loop. Data saved to", os.path.join(directory_path, 'Combined_Data.csv'))
+print("Exited the loop. Data saved to", os.path.join(directory_path, 'Data Values/Combined_Data.csv'))
