@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python\\SwaggerNetCore\\SwaggerNetCore.csproj": {}
+    "C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python\\swaggernetcore\\SwaggerNetCore.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python\\SwaggerNetCore\\SwaggerNetCore.csproj": {
+    "C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python\\swaggernetcore\\SwaggerNetCore.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python\\SwaggerNetCore\\SwaggerNetCore.csproj",
+        "projectUniqueName": "C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python\\swaggernetcore\\SwaggerNetCore.csproj",
         "projectName": "SwaggerNetCore",
-        "projectPath": "C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python\\SwaggerNetCore\\SwaggerNetCore.csproj",
+        "projectPath": "C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python\\swaggernetcore\\SwaggerNetCore.csproj",
         "packagesPath": "C:\\Users\\ilyas\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python\\SwaggerNetCore\\obj\\",
+        "outputPath": "C:\\Users\\Ilyas work\\PycharmProjects\\Data Analysis\\Data-Analysis-with-Python\\swaggernetcore\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\ilyas\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -48,6 +48,14 @@
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[8.0.4, )"
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[8.0.4, )"
+            },
+            "Pomelo.EntityFrameworkCore.MySql": {
+              "target": "Package",
+              "version": "[8.0.2, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
