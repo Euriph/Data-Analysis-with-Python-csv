@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from sqlalchemy import create_engine, Column, Integer, Float, DateTime, String, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, Float, DateTime, String, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import pandas as pd
@@ -39,75 +39,57 @@ class Coefficients(Base):
 
 Base.metadata.create_all(engine)
 
-
-@app.route('/update_data', methods=['POST'])
-def update_data():
-    data = request.json
-    date = pd.to_datetime(data['date'])
-    value = float(data['value'])
-    session = Session()
-    master_entry = WebAppRequestMaster(TimeStamp=datetime.now(), RecordCount=1, FileName=None, UserName="API User")
-    session.add(master_entry)
-    session.flush()  # Ensures 'UniqueId' is available
-    dp = WebAppRequest(MasterUniqueId=master_entry.UniqueId, DataDate=date, DataValue=value)
-    session.add(dp)
-    session.commit()
-
-    model = IncrementalLinearRegression()
-    all_data = session.query(WebAppRequest).all()
-    for dp in all_data:
-        model.update(dp.DataDate.toordinal(), dp.DataValue)
-
-    coeffs = model.coefficients()
-    process_date = datetime.now()
-    coeffs_entry = Coefficients(ProcessDate=process_date, b0=coeffs[0], b1=coeffs[1])
-    session.add(coeffs_entry)
-    session.commit()
-    session.close()
-    return jsonify({"message": "Data updated, model recalculated", "coefficients": coeffs}), 200
-
-
 @app.route('/upload_csv', methods=['POST'])
 def upload_csv():
     file = request.files['file']
     df = pd.read_csv(file)
+    df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%y')
+
     session = Session()
 
-    # Create a master record for this batch of data
+    # Check if there are records in the database to determine the earliest date for normalization
+    database_min_date = session.query(func.min(WebAppRequest.DataDate)).scalar()
+    csv_min_date = df['Date'].min().date()  # Convert pandas Timestamp to datetime.date directly
+
+    if database_min_date:
+        min_date = min(database_min_date, csv_min_date)
+    else:
+        min_date = csv_min_date
+
     master_entry = WebAppRequestMaster(
         TimeStamp=datetime.now(),
         RecordCount=len(df),
         FileName=file.filename,
-        UserName="API User"  # This should be dynamically determined based on your app's context
+        UserName="API User"
     )
     session.add(master_entry)
-    session.flush()  # Ensures 'UniqueId' is available before linking data points
+    session.flush()
 
-    # Process each row in the CSV file
     for index, row in df.iterrows():
-        date = pd.to_datetime(row['Date'])
-        value = float(row['Value'])
-        dp = WebAppRequest(MasterUniqueId=master_entry.UniqueId, DataDate=date, DataValue=value)
+        # Ensure row['Date'] is converted to datetime.date for the calculation
+        normalized_date = (row['Date'].date() - min_date).days  # Convert to date and calculate days
+        dp = WebAppRequest(MasterUniqueId=master_entry.UniqueId, DataDate=row['Date'], DataValue=row['Value'])
         session.add(dp)
 
     session.commit()
 
-    # Update model with new data and recalculate coefficients
+    # Initialize and update model with normalized dates
     model = IncrementalLinearRegression()
     all_data = session.query(WebAppRequest).all()
     for dp in all_data:
-        model.update(dp.DataDate.toordinal(), dp.DataValue)
+        norm_date = (dp.DataDate - min_date).days
+        model.update(norm_date, dp.DataValue)
 
     coeffs = model.coefficients()
     process_date = datetime.now()
-    # Delete old coefficients and save new ones
-    session.query(Coefficients).delete()
     coeffs_entry = Coefficients(ProcessDate=process_date, b0=coeffs[0], b1=coeffs[1])
     session.add(coeffs_entry)
     session.commit()
 
     session.close()
     return jsonify({"message": "CSV uploaded and model recalculated", "coefficients": coeffs}), 200
+
+
 
 
 if __name__ == '__main__':
