@@ -39,6 +39,43 @@ class Coefficients(Base):
 
 Base.metadata.create_all(engine)
 
+@app.route('/submit_single_data', methods=['POST'])
+def submit_single_data():
+    data = request.json
+    date = pd.to_datetime(data['date']).date()  # Convert to date
+    value = float(data['value'])
+    user_name = data['username']  # Extract username from the request
+    session = Session()
+
+    # Retrieve the minimum date from the database to normalize the date input
+    min_date = session.query(func.min(WebAppRequest.DataDate)).scalar()
+    if not min_date:
+        min_date = date  # If there's no data yet, use the current date as the min_date
+    normalized_date = (date - min_date).days  # This should now work
+
+    master_entry = WebAppRequestMaster(TimeStamp=datetime.now(), RecordCount=1,
+                                       FileName="Single Data", UserName=user_name)
+    session.add(master_entry)
+    session.flush()  # Ensures 'UniqueId' is available
+    dp = WebAppRequest(MasterUniqueId=master_entry.UniqueId, DataDate=date, DataValue=value)
+    session.add(dp)
+    session.commit()
+
+    model = IncrementalLinearRegression()
+    all_data = session.query(WebAppRequest).all()
+    for dp in all_data:
+        norm_date = (dp.DataDate - min_date).days
+        model.update(norm_date, dp.DataValue)
+
+    coeffs = model.coefficients()
+    process_date = datetime.now()
+    coeffs_entry = Coefficients(ProcessDate=process_date, b0=coeffs[0], b1=coeffs[1])
+    session.add(coeffs_entry)
+    session.commit()
+    session.close()
+    return jsonify({"message": "Single data submitted, model recalculated", "coefficients": coeffs}), 200
+
+
 @app.route('/upload_csv', methods=['POST'])
 def upload_csv():
     file = request.files['file']
