@@ -51,7 +51,6 @@ def submit_single_data():
     min_date = session.query(func.min(WebAppRequest.DataDate)).scalar()
     if not min_date:
         min_date = date  # If there's no data yet, use the current date as the min_date
-    normalized_date = (date - min_date).days  # This should now work
 
     master_entry = WebAppRequestMaster(TimeStamp=datetime.now(), RecordCount=1,
                                        FileName="Single Data", UserName=user_name)
@@ -103,8 +102,6 @@ def upload_csv():
     session.flush()
 
     for index, row in df.iterrows():
-        # Ensure row['Date'] is converted to datetime.date for the calculation
-        normalized_date = (row['Date'].date() - min_date).days  # Convert to date and calculate days
         dp = WebAppRequest(MasterUniqueId=master_entry.UniqueId, DataDate=row['Date'], DataValue=row['Value'])
         session.add(dp)
 
