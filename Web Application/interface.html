@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Submission App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Data Submission Portal</h1>
+
+    <div>
+        <h2>Submit Single Data</h2>
+        <form id="singleDataForm">
+            <input type="text" id="date" name="date" placeholder="Date (YYYY-MM-DD)" required>
+            <input type="text" id="value" name="value" placeholder="Value" required>
+            <input type="text" id="username" name="username" placeholder="Username" required>
+            <button type="submit">Submit Data</button>
+        </form>
+    </div>
+
+    <div>
+        <h2>Upload CSV File</h2>
+        <form id="csvUploadForm" enctype="multipart/form-data">
+            <input type="file" id="csvFile" name="file" accept=".csv" required>
+            <button type="submit">Upload CSV</button>
+        </form>
+    </div>
+
+    <div>
+        <h2>Data Analysis Report</h2>
+        <img id="dataPlot" src="" alt="Data plot">
+        <p id="mseReport"></p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
