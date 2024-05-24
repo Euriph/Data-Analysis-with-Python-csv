@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SwaggerNetCore")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+61d1f3426c06eac2a281b0ee959db1ad647d5588")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6790adffa2c113af1d775ba4fdc68621a429be25")]
 [assembly: System.Reflection.AssemblyProductAttribute("SwaggerNetCore")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SwaggerNetCore")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
