@@ -1,3 +1,6 @@
+import os
+
+import tiktoken
 from flask import Flask, request, jsonify
 from sqlalchemy import create_engine, Column, Integer, Float, DateTime, String, ForeignKey, func, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
@@ -8,6 +11,7 @@ from flask_cors import CORS
 import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
+import openai
 
 app = Flask(__name__)
 CORS(app)
@@ -200,6 +204,88 @@ def get_data_plot():
     session.close()
     return jsonify({'image': data, 'mse': mse})
 
+# openai.api_key = "sk-proj-CYKnS0o1DtV9pBesZQTHT3BlbkFJ67dAw2PfmH3CaRtMrncG"
+@app.route('/generate_insights', methods=['POST'])
+def generate_insights():
+    data = request.json
+    prompt = f"Generate a detailed insight based on this data: {data['summary']}"
+
+    openai.api_key = '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'
+
+    # Tokenize the prompt using tiktoken
+    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+    tokens = encoding.encode(prompt)
+    token_count = len(tokens)
+
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+        )
+
+        # Ensure the response handling matches the structure of the API response
+        insight = response.choices[0].message.content
+        return jsonify({"insight": insight, "token_count": token_count}), 200
+    except Exception as e:
+        app.logger.error(f"Failed to generate insights: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/get_data_summary', methods=['GET'])
+def get_data_summary():
+    session = Session()
+    model = IncrementalLinearRegression(session)
+
+    # Fetch and summarize data
+    data_points = session.query(WebAppRequest.DataDate, WebAppRequest.DataValue).order_by(WebAppRequest.DataDate).all()
+    if not data_points:
+        return jsonify({'message': 'No data available to summarize'})
+
+    # Limit data points to a maximum of 100
+    max_points = 100
+    if len(data_points) > max_points:
+        data_points = data_points[::len(data_points) // max_points]
+
+    dates = [dp.DataDate for dp in data_points]
+    values = [dp.DataValue for dp in data_points]
+    min_date = min(dates)
+    x = [(date - min_date).days for date in dates]
+
+    for day, value in zip(x, values):
+        model.update(day, value)
+
+    predicted = [model.predict(day) for day in x]
+    mse = sum((p - v) ** 2 for p, v in zip(predicted, values)) / len(values) if values else float('inf')
+    coeffs = model.coefficients()
+
+    # Generate plot
+    plt.figure(figsize=(6, 4), dpi=80)  # Smaller size and lower resolution
+    plt.plot(x, values, marker='o', linestyle='-', color='blue', label='Actual')
+    plt.plot(x, predicted, linestyle='-', color='red', label='Predicted')
+    plt.title('Data Plot Over Time')
+    plt.xlabel('Days from start')
+    plt.ylabel('Data Value')
+    plt.legend()
+    plt.grid(True)
+
+    buf = BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    plt.close()
+    plot_data = base64.b64encode(buf.getbuffer()).decode("ascii")
+
+    summary = {
+        'coefficients': {'b0': coeffs[0], 'b1': coeffs[1]},
+        'mse': mse,
+        'plot': plot_data,
+        'data_points': [{'date': str(d), 'value': v} for d, v in zip(dates, values)]
+    }
+
+    session.close()
+    return jsonify(summary)
 
 if __name__ == '__main__':
     app.run(debug=True)
