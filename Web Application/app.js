@@ -44,6 +44,39 @@ document
       });
   });
 
+document
+  .getElementById("generateInsightsButton")
+  .addEventListener("click", function () {
+    fetch("http://localhost:5000/get_data_summary")
+      .then((response) => response.json())
+      .then((summary) => {
+        const summaryData = {
+          coefficients: summary.coefficients,
+          mse: summary.mse,
+          data_points: summary.data_points.slice(-100), // Ensuring only 100 data points are sent
+        };
+        // Print the summary data to the console
+        console.log("Summary Data:", summaryData);
+        fetch("http://localhost:5000/generate_insights", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ summary: JSON.stringify(summaryData) }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("insightsResult").textContent =
+              "Generated Insights: " +
+              data.insight +
+              "\nToken Used: " +
+              data.token_count;
+          })
+          .catch((error) => console.error("Error generating insights:", error));
+      })
+      .catch((error) => console.error("Error fetching data summary:", error));
+  });
+
 function fetchDataPlot() {
   fetch("http://localhost:5000/get_data_plot")
     .then((response) => response.json())
@@ -59,3 +92,20 @@ function fetchDataPlot() {
 
 // Call the function to fetch data when the page loads or based on some user action
 fetchDataPlot();
+
+function generateInsights() {
+  const summaryData = {
+    summary: "summary of the user's data or a specific query",
+  };
+
+  fetch("http://localhost:5000/generate_insights", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(summaryData),
+  })
+    .then((response) => response.json())
+    .then((data) => alert("Generated Insights: " + data.insight))
+    .catch((error) => console.error("Error:", error));
+}
