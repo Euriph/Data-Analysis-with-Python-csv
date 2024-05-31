@@ -1,7 +1,12 @@
-from sqlalchemy import Column, Integer, Float, DateTime, String, ForeignKey, func, BigInteger
-from sqlalchemy.orm import relationship
+from sqlalchemy import create_engine, Column, Integer, Float, DateTime, String, ForeignKey, func, BigInteger
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.dialects.mysql import JSON
-from config import Base, engine
+from config import DATABASE_URI
+
+engine = create_engine(DATABASE_URI)
+Session = sessionmaker(bind=engine)
+Base = declarative_base()
 
 class WebAppRequestMaster(Base):
     __tablename__ = 'TblWebAppRequestMaster'
@@ -49,5 +54,3 @@ class LogisticRegressionState(Base):
     TargetCounts = Column(JSON, nullable=False)
     FeatureTargetSums = Column(JSON, nullable=False)
     Count = Column(BigInteger, nullable=False)
-
-Base.metadata.create_all(engine)

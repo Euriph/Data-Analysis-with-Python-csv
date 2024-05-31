@@ -1,4 +1,4 @@
-from server import RegressionState
+from project.models import RegressionState
 
 class IncrementalLinearRegression:
     def __init__(self, session):
@@ -23,7 +23,6 @@ class IncrementalLinearRegression:
         self.S_xx += x_new ** 2
         self.S_xy += x_new * y_new
         self.n += 1
-        # Save the updated state back to the database
         state = self.session.query(RegressionState).first()
         if state:
             state.S_x = self.S_x

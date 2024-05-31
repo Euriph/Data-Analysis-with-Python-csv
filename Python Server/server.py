@@ -416,7 +416,7 @@ def get_data_summary():
     session.close()
     return jsonify(summary)
 
-# Routes for multi-linear and logistic regression
+# Routes for multi linear and logistic regression
 @app.route('/submit_multi_data', methods=['POST'])
 def submit_multi_data():
     data = request.json

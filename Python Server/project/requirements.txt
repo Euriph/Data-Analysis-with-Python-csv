@@ -1,0 +1,9 @@
+Flask
+Flask-CORS
+SQLAlchemy
+PyMySQL
+pandas
+matplotlib
+openai
+scikit-learn
+tiktoken
