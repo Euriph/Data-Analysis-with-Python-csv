@@ -53,9 +53,8 @@ document
         const summaryData = {
           coefficients: summary.coefficients,
           mse: summary.mse,
-          data_points: summary.data_points.slice(-100), // Ensuring only 100 data points are sent
+          data_points: summary.data_points.slice(-100),
         };
-        // Print the summary data to the console
         console.log("Summary Data:", summaryData);
         fetch("http://localhost:5000/generate_insights", {
           method: "POST",
@@ -66,11 +65,12 @@ document
         })
           .then((response) => response.json())
           .then((data) => {
-            document.getElementById("insightsResult").textContent =
-              "Generated Insights: " +
-              data.insight +
-              "\nToken Used: " +
-              data.token_count;
+            const insightsResult = document.getElementById("insightsResult");
+            insightsResult.innerHTML = `
+                      <p>Generated Insights:</p>
+                      <pre>${data.insight}</pre>
+                      <p>Token Used: ${data.token_count}</p>
+                  `;
           })
           .catch((error) => console.error("Error generating insights:", error));
       })
@@ -90,22 +90,4 @@ function fetchDataPlot() {
     .catch((error) => console.error("Error fetching data plot:", error));
 }
 
-// Call the function to fetch data when the page loads or based on some user action
 fetchDataPlot();
-
-function generateInsights() {
-  const summaryData = {
-    summary: "summary of the user's data or a specific query",
-  };
-
-  fetch("http://localhost:5000/generate_insights", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(summaryData),
-  })
-    .then((response) => response.json())
-    .then((data) => alert("Generated Insights: " + data.insight))
-    .catch((error) => console.error("Error:", error));
-}

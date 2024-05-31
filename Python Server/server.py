@@ -1,5 +1,3 @@
-import os
-
 import tiktoken
 from flask import Flask, request, jsonify
 from sqlalchemy import create_engine, Column, Integer, Float, DateTime, String, ForeignKey, func, BigInteger
@@ -12,6 +10,10 @@ import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
 import openai
+from sqlalchemy.dialects.mysql import JSON
+from sklearn.linear_model import LinearRegression, LogisticRegression
+import numpy as np
+
 
 app = Flask(__name__)
 CORS(app)
@@ -52,6 +54,24 @@ class RegressionState(Base):
     S_y = Column(Float, nullable=False)
     S_xx = Column(Float, nullable=False)
     S_xy = Column(Float, nullable=False)
+    Count = Column(BigInteger, nullable=False)
+
+# Multi-linear Regression State
+class MultiLinearRegressionState(Base):
+    __tablename__ = 'TblMultiLinearRegressionState'
+    ID = Column(Integer, primary_key=True, autoincrement=True)
+    FeatureSums = Column(JSON, nullable=False)
+    TargetSums = Column(Float, nullable=False)
+    FeatureTargetSums = Column(JSON, nullable=False)
+    Count = Column(BigInteger, nullable=False)
+
+# Logistic Regression State
+class LogisticRegressionState(Base):
+    __tablename__ = 'TblLogisticRegressionState'
+    ID = Column(Integer, primary_key=True, autoincrement=True)
+    FeatureSums = Column(JSON, nullable=False)
+    TargetCounts = Column(JSON, nullable=False)
+    FeatureTargetSums = Column(JSON, nullable=False)
     Count = Column(BigInteger, nullable=False)
 
 class IncrementalLinearRegression:
@@ -100,6 +120,115 @@ class IncrementalLinearRegression:
     def predict(self, x):
         b0, b1 = self.coefficients()
         return b0 + b1 * x
+
+# Incremental Multi-linear Regression
+class IncrementalMultiLinearRegression:
+    def __init__(self, session):
+        self.session = session
+        state = self.session.query(MultiLinearRegressionState).first()
+        if state:
+            self.feature_sums = state.FeatureSums
+            self.target_sums = state.TargetSums
+            self.feature_target_sums = state.FeatureTargetSums
+            self.n = state.Count
+        else:
+            self.feature_sums = {}
+            self.target_sums = 0
+            self.feature_target_sums = {}
+            self.n = 0
+
+    def update(self, X_new, y_new):
+        for i, x in enumerate(X_new):
+            if i not in self.feature_sums:
+                self.feature_sums[i] = 0
+                self.feature_target_sums[i] = 0
+            self.feature_sums[i] += x
+            self.feature_target_sums[i] += x * y_new
+
+        self.target_sums += y_new
+        self.n += 1
+
+        state = self.session.query(MultiLinearRegressionState).first()
+        if state:
+            state.FeatureSums = self.feature_sums
+            state.TargetSums = self.target_sums
+            state.FeatureTargetSums = self.feature_target_sums
+            state.Count = self.n
+        else:
+            state = MultiLinearRegressionState(
+                FeatureSums=self.feature_sums,
+                TargetSums=self.target_sums,
+                FeatureTargetSums=self.feature_target_sums,
+                Count=self.n
+            )
+            self.session.add(state)
+        self.session.commit()
+
+    def coefficients(self):
+        X = np.array([self.feature_sums[i] for i in sorted(self.feature_sums)])
+        y = self.target_sums
+        XtX_inv = np.linalg.inv(np.dot(X.T, X))
+        XtY = np.dot(X.T, y)
+        coefs = np.dot(XtX_inv, XtY)
+        return coefs
+
+    def predict(self, X):
+        coefs = self.coefficients()
+        return np.dot(coefs, X)
+
+# Incremental Logistic Regression
+class IncrementalLogisticRegression:
+    def __init__(self, session):
+        self.session = session
+        state = self.session.query(LogisticRegressionState).first()
+        if state:
+            self.feature_sums = state.FeatureSums
+            self.target_counts = state.TargetCounts
+            self.feature_target_sums = state.FeatureTargetSums
+            self.n = state.Count
+        else:
+            self.feature_sums = {}
+            self.target_counts = {'0': 0, '1': 0}
+            self.feature_target_sums = {}
+            self.n = 0
+
+    def update(self, X_new, y_new):
+        for i, x in enumerate(X_new):
+            if i not in self.feature_sums:
+                self.feature_sums[i] = 0
+                self.feature_target_sums[i] = 0
+            self.feature_sums[i] += x
+            self.feature_target_sums[i] += x * y_new
+
+        self.target_counts[str(y_new)] += 1
+        self.n += 1
+
+        state = self.session.query(LogisticRegressionState).first()
+        if state:
+            state.FeatureSums = self.feature_sums
+            state.TargetCounts = self.target_counts
+            state.FeatureTargetSums = self.feature_target_sums
+            state.Count = self.n
+        else:
+            state = LogisticRegressionState(
+                FeatureSums=self.feature_sums,
+                TargetCounts=self.target_counts,
+                FeatureTargetSums=self.feature_target_sums,
+                Count=self.n
+            )
+            self.session.add(state)
+        self.session.commit()
+
+    def coefficients(self):
+        X = np.array([self.feature_sums[i] for i in sorted(self.feature_sums)])
+        y = np.array([self.target_counts['0'], self.target_counts['1']])
+        model = LogisticRegression()
+        model.fit(X, y)
+        return model.intercept_, model.coef_
+
+    def predict(self, X):
+        coefs = self.coefficients()
+        return np.dot(coefs, X)
 
 
 
@@ -286,6 +415,37 @@ def get_data_summary():
 
     session.close()
     return jsonify(summary)
+
+# Routes for multi-linear and logistic regression
+@app.route('/submit_multi_data', methods=['POST'])
+def submit_multi_data():
+    data = request.json
+    date = pd.to_datetime(data['date']).date()
+    values = [float(v) for v in data['values']]  # Expecting multiple values
+    target = float(data['target'])
+    user_name = data['username']
+    session = Session()
+
+    model = IncrementalMultiLinearRegression(session)
+    model.update(values, target)
+
+    coeffs = model.coefficients()
+    return jsonify({"message": "Multi-linear data submitted, model recalculated", "coefficients": coeffs}), 200
+
+@app.route('/submit_logistic_data', methods=['POST'])
+def submit_logistic_data():
+    data = request.json
+    values = [float(v) for v in data['values']]  # Expecting multiple values
+    target = int(data['target'])  # Binary target (0 or 1)
+    user_name = data['username']
+    session = Session()
+
+    model = IncrementalLogisticRegression(session)
+    model.update(values, target)
+
+    coeffs = model.coefficients()
+    return jsonify({"message": "Logistic data submitted, model recalculated", "coefficients": coeffs}), 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)
