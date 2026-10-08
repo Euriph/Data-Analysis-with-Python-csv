@@ -1,6 +1,6 @@
 import openai
 
-openai.api_key = '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'
+openai.api_key = ''
 
 completion = openai.chat.completions.create(
     model="gpt-3.5-turbo",
