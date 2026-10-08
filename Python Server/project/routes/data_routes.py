@@ -100,7 +100,6 @@ def get_data_plot():
     session.close()
     return jsonify({'image': plot_data, 'mse': mse})
 
-# openai.api_key = "sk-proj-CYKnS0o1DtV9pBesZQTHT3BlbkFJ67dAw2PfmH3CaRtMrncG"
 @data_bp.route('/generate_insights', methods=['POST'])
 def generate_insights():
     data = request.json
